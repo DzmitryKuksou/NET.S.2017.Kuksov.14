@@ -1,150 +1,280 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Sets
 {
-    public class Set<T> : IEnumerable<T>, IEquatable<Set<T>>, ICloneable where T : class
+    public class Set<T> : ISet<T>, ICloneable where T : class
     {
+        #region fields 
         /// <summary>
         /// fields
-        /// </summary>
+        /// </summary>     
         private T[] stored;
         private int count;
+        public bool IsReadOnly => false;
+        #endregion
+
+        #region properties
         /// <summary>
         /// property
         /// </summary>
         public int Count => count;
+        #endregion
+        #region c-tors
         /// <summary>
-        /// c-or
+        /// C-tor
         /// </summary>
         public Set()
         {
+            count = 0;
             stored = new T[20];
         }
         /// <summary>
-        /// c-or
+        /// C-tor with parameter
         /// </summary>
         /// <param name="size">size</param>
         public Set(int size)
         {
-            if (size < 1) throw new ArgumentException();
+            if (size < 1) throw new ArgumentException($"{nameof(size)} is less than one!");
             stored = new T[size];
             count = 0;
         }
+
         /// <summary>
-        /// c-or
+        /// C-or
         /// </summary>
-        /// <param name="set">set</param>
-        public Set(IEnumerable<T> set)
+        /// <param name="collection">collection of set</param>
+        public Set(IEnumerable<T> collection)
         {
-            if (set == null) throw new ArgumentException();
-            foreach (var element in set)
-                Add(element);
+            if (collection == null) throw new ArgumentNullException($"{nameof(collection)} is null!");
+            foreach (var item in collection)
+            {
+                Add(item);
+            }
         }
+        #endregion
+
         /// <summary>
-        /// adding el
+        /// Enumerator
         /// </summary>
-        /// <param name="element">element</param>
-        public void Add(T element)
+        /// <returns>IEnumerator<T></returns>
+        public IEnumerator<T> GetEnumerator()
         {
-            if (count == stored.Length) Resize();
+            for (int i = 0; i < count; i++)
+            {
+                yield return stored[i];
+            }
+        }
+
+        /// <summary>
+        /// Adds an element
+        /// </summary>
+        /// <param name="item">Element</param>
+        /// <returns>True or false</returns>
+        public bool Add(T element)
+        {
+            if (element == null) throw new ArgumentNullException($"{nameof(element)} is null!");
+            if (Contains(element)) return false;
+            if (Count == stored.Length) Resize();
             stored[count++] = element;
+            return true;
         }
         /// <summary>
-        /// removing el
+        /// Removing element
         /// </summary>
-        /// <param name="element">element</param>
-        public void Remove(T element)
+        /// <param name="item">Element</param>
+        /// <returns>true or false</returns>
+        public bool Remove(T element)
         {
+            if (!Contains(element)) return false;
+            int index = 0;
             for (int i = 0; i < Count; i++)
             {
-                if (stored[i] == element)
-                {
-                    for (int j = i; j < Count - 1; i++)
-                    {
-                        stored[j] = stored[j + 1];
-                    }
-                    stored[count - 1] = default(T);
-                    break;
-                }
+                if (stored[i] == element) index = i;
+            }
+            stored[index] = stored[Count - 1];
+            stored[Count - 1] = default(T);
+            count--;
+            return true;
+        }
+
+        /// <summary>
+        /// Checking 
+        /// </summary>
+        /// <param name="item">Element</param>
+        /// <returns>True or false</returns>
+        public bool Contains(T element)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (stored[i] == element) return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Clearing.
+        /// </summary>
+        public void Clear()
+        {
+            count = 0;
+            stored = new T[20];
+        }
+        /// <summary>
+        /// intersection
+        /// </summary>
+        /// <param name="other">set</param>
+        public void IntersectWith(IEnumerable<T> other)
+        {
+            if (other == null) throw new ArgumentNullException($"{nameof(other)} is null!");
+            foreach (var item in other)
+            {
+                if (!Contains(item))
+                    Remove(item);
             }
         }
         /// <summary>
-        /// checking on equality
+        /// expecting
         /// </summary>
-        /// <param name="set">set</param>
-        /// <returns>true or false</returns>
-        public bool Equals(Set<T> set)
+        /// <param name="other">set</param>
+        public void ExceptWith(IEnumerable<T> other)
         {
-            if (set == null) throw new ArgumentNullException();
-            if (Count != count) return false;
-            int i = 0;
-            foreach (var el in set)
+            if (other == null) throw new ArgumentNullException($"{nameof(other)} is null!");
+
+            foreach (var el in other)
             {
-                if (el != stored[i]) return false;
-                i++;
+                Remove(el);
+            }
+        }
+        /// <summary>
+        /// Union with other set
+        /// </summary>
+        /// <param name="other">set</param>
+        public void UnionWith(IEnumerable<T> other)
+        {
+            if (other == null) throw new ArgumentNullException($"{nameof(other)} is null!");
+            foreach (var el in other)
+            {
+                Add(el);
+            }
+        }
+        /// <summary>
+        /// Symmetric Set
+        /// </summary>
+        /// <param name="other">Other collection.</param>
+        public void SymmetricExceptWith(IEnumerable<T> other)
+        {
+            if (other == null) throw new ArgumentNullException($"{nameof(other)} is null!");
+            foreach (var el in other)
+            {
+                if (Contains(el))Remove(el);
+                else Add(el);
+            }
+        }
+
+        /// <summary>
+        ///  checking, super set
+        /// </summary>
+        /// <param name="other">set</param>
+        /// <returns>true or false</returns>
+        public bool IsSupersetOf(IEnumerable<T> other)
+        {
+            if (other == null) throw new ArgumentNullException($"{nameof(other)} is null");
+            if (Count < other.Count()) return false;
+            foreach (var item in other)
+            {
+                if (!Contains(item)) return false;
             }
             return true;
         }
         /// <summary>
-        ///  returns Enumerator
+        /// checking subset
         /// </summary>
-        /// <returns>Enumerator</returns>
-        public IEnumerator<T> GetEnumerator()
-        {
-            for (int i = 0; i < count; i++)
-                yield return stored[i];
-        }
-        /// <summary>
-        /// Intersection of sets
-        /// </summary>
-        /// <param name="lhs">first set</param>
-        /// <param name="rhs">second set</param>
-        /// <returns>set</returns>
-        public static Set<T> Intersection(Set<T> lhs, Set<T> rhs)
-        {
-            Set<T> newSet = new Set<T>();
-            foreach (var element in lhs)
-                if (rhs.Contains(element)) newSet.Add(element);
-            return newSet;
-
-        }
-        /// <summary>
-        /// Association of sets
-        /// </summary>
-        /// <param name="lhs">first set</param>
-        /// <param name="rhs">second set</param>
-        /// <returns>set</returns>
-        public static Set<T> Association(Set<T> lhs, Set<T> rhs)
-        {
-            Set<T> newSet = new Set<T>(lhs);
-            foreach (var element in rhs)
-                if (!newSet.Contains(element)) newSet.Add(element);
-            return newSet;
-        }
-        /// <summary>
-        /// checking on contains el
-        /// </summary>
-        /// <param name="el">element</param>
+        /// <param name="other">set</param>
         /// <returns>true or false</returns>
-        public bool Contains(T el)
+        public bool IsSubsetOf(IEnumerable<T> other)
         {
+            if (other == null) throw new ArgumentNullException($"{nameof(other)} is null");
+            if (Count > other.Count()) return false;
+
             for (int i = 0; i < Count; i++)
-                if (el == stored[i]) return true;
+            {
+                if (!other.Contains(stored[i])) return false;
+            }
+            return true;
+        }
+        /// <summary>
+        /// Over laps
+        /// </summary>
+        /// <param name="other">set</param>
+        /// <returns>true or false</returns>
+        public bool Overlaps(IEnumerable<T> other)
+        {
+            if (other == null) throw new ArgumentNullException($"{nameof(other)} is null!");
+            foreach (var el in stored)
+            {
+                if (other.Contains(el)) return true;
+            }
             return false;
         }
         /// <summary>
-        /// converting to string
+        /// checking proper subset
         /// </summary>
-        /// <returns>string</returns>
+        /// <param name="other">set</param>
+        /// <returns>true or false</returns>
+        public bool IsProperSubsetOf(IEnumerable<T> other)
+        {
+            if (other == null) throw new ArgumentNullException($"{nameof(other)} is null!");
+            return IsSubsetOf(other) && count > other.Count();
+        }
+        /// <summary>
+        /// set equals
+        /// </summary>
+        /// <param name="other">set</param>
+        /// <returns>true or false</returns>
+        public bool SetEquals(IEnumerable<T> other)
+        {
+            if (other == null) throw new ArgumentNullException($"{nameof(other)} is null");
+            if (other == this) return true;
+            if (Count != other.Count()) return false;
+            return IsSupersetOf(other) && IsSubsetOf(other);
+        }
+        /// <summary>
+        /// proper set
+        /// </summary>
+        /// <param name="other">set</param>
+        /// <returns>true or false</returns>
+        public bool IsProperSupersetOf(IEnumerable<T> other)
+        {
+            if (other == null) throw new ArgumentNullException($"{nameof(other)} is null");
+            return IsSupersetOf(other) && count < other.Count();
+        }
+        /// <summary>
+        /// copy to array
+        /// </summary>
+        /// <param name="array">Array.</param>
+        /// <param name="arrayIndex">index</param>
+        public void CopyTo(T[] array, int arrayIndex)
+        {
+            if (array == null) throw new ArgumentNullException($"{nameof(array)} is null!");
+            if (arrayIndex < 0 || arrayIndex > array.Length) throw new ArgumentException($"{nameof(arrayIndex)} is invalid!");
+            for (int i = arrayIndex; i < array.Length; i++)
+            {
+                if (i - arrayIndex > Count) return;
+                array[i] = stored[i - arrayIndex];
+            }
+        }
+        /// <summary>
+        /// Returns in format string.
+        /// </summary>
+        /// <returns>String</returns>
         public override string ToString()
         {
             StringBuilder str = new StringBuilder();
-            for (int i = 0; i < Count; i++) 
+            for (int i = 0; i < count; i++)
             {
                 str.Append(stored[i].ToString());
             }
@@ -158,31 +288,23 @@ namespace Sets
         {
             return new Set<T>(this);
         }
+        object ICloneable.Clone()
+        {
+            return new Set<T>(this);
+        }
+        void ICollection<T>.Add(T item) => Add(item);
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         /// <summary>
-        /// resizing
+        /// resizeng
         /// </summary>
         private void Resize()
         {
             T[] empty = new T[stored.Length + 20];
-            for (int i = 0; i < stored.Length; i++) 
+            for (int i = 0; i < stored.Length; i++)
             {
                 empty[i] = stored[i];
             }
             stored = empty;
         }
-        /// <summary>
-        /// cloning
-        /// </summary>
-        /// <returns>set</returns>
-        object ICloneable.Clone()
-        {
-            return new Set<T>(this);
-        }
-        /// <summary>
-        /// returning enumerator
-        /// </summary>
-        /// <returns></returns>
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
     }
 }
