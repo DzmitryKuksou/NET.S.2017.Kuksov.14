@@ -25,7 +25,7 @@ namespace Sets
         #endregion
         #region c-tors
         /// <summary>
-        /// C-tor
+        /// c-tor
         /// </summary>
         public Set()
         {
