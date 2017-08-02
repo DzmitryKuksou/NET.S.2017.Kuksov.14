@@ -71,14 +71,10 @@ namespace Matrixs
                 }
             }
         }
-        protected override T GetElement(int i, int j)
-        {
-            return (j <= i) ? array[i][j] : array[j][i];
-        }
 
         protected override void SetElement(T element, int i, int j) 
         {
-            if (ReferenceEquals(element, null)) throw new ArgumentNullException($"{nameof(element)} is null!");
+            if (element == null) throw new ArgumentNullException($"{nameof(element)} is null!");
             if (j <= i)
                 array[i][j] = element;
             else

@@ -22,9 +22,9 @@ namespace Matrixs
             this.size = size;
             array = new T[Size, Size];
         }
-        public SquareMatrix(int size, IEnumerable<T> inputArray) : this(size)
+        public SquareMatrix(int size, IEnumerable<T> Array) : this(size)
         {
-            FillMatrix(inputArray);
+            FillMatrix(Array);
         }
         #endregion
         public void ElementMessage(object sender, ElementEventArgs e)
@@ -61,12 +61,8 @@ namespace Matrixs
        
         protected override void SetElement(T element, int i, int j)
         {
-            if (ReferenceEquals(element, null)) throw new ArgumentNullException($"{nameof(element)} is null.");
+            if (element == null) throw new ArgumentNullException($"{nameof(element)} is null.");
             array[i, j] = element;
-        }
-        protected override T GetElement(int i, int j)
-        {
-            return array[i, j];
         }
 
     }
